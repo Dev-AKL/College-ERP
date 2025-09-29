@@ -21,6 +21,11 @@ const studentRoutes = require('./src/routes/studentRoutes');
 
 app.use('/api/students', studentRoutes);
 
+const adminRoutes = require('./src/routes/adminRoutes');
+
+app.use('/api/admin', adminRoutes);
+
+
 // MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI;
 mongoose.connect(MONGO_URI)

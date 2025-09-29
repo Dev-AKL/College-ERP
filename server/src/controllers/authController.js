@@ -45,7 +45,7 @@ const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).populate('studentDetails');
     if (!user) {
       return res.status(404).json({ message: 'User not found. Please sign up.' });
     }
@@ -56,6 +56,8 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role,
         token: generateToken(user._id),
+        //Add the user object to the response, so the frontend can check detailsComplete
+        user: user,
       });
     } else {
       res.status(401).json({ message: 'Invalid email or password' });

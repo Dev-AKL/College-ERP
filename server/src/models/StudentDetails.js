@@ -23,10 +23,25 @@ const studentDetailsSchema = new mongoose.Schema({
   courseTenure: String,
   contactNo: String,
   additionalEmail: String,
-  detailsComplete: {
-    type: Boolean,
-    default: false,
-  },
+
+  fees: [{
+    semester: {
+      type: String,
+      required: true,
+    },
+    amount: {
+      type: Number,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ['paid', 'pending'],
+      default: 'pending',
+    },
+    transactionId: String,
+    paidAt: Date,
+  }],
+
 }, {
   timestamps: true,
 });

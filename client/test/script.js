@@ -82,12 +82,109 @@ if (loginForm) {
                 
                 if (data.user && data.user.detailsComplete) {
           // Redirect to the user's profile if details are complete
-          window.location.href = '/dashboard.html';
+          window.location.href = './student-fees.html';
         } else {
           // Redirect to the student details form if details are not complete
-          window.location.href = '/student-details-form.html';
+          window.location.href = './student-details-form.html';
         }
 
+            } else {
+                displayMessage(`Error: ${data.message}`, true);
+            }
+        } catch (error) {
+            displayMessage('Network error. Is the backend server running?', true);
+            console.error('Network error:', error);
+        }
+    });
+}
+
+// --- Admin Dashboard Logic (for admin-dashboard.html) ---
+
+const qrUploadForm = document.getElementById('qr-upload-form');
+
+if (qrUploadForm) {
+    qrUploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            displayMessage('No token found. Please log in as an admin first.', true);
+            return;
+        }
+
+        const formData = new FormData();
+        const fileInput = document.getElementById('qr-code-file');
+        formData.append('qrCode', fileInput.files[0]);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/upload-qr`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData,
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                displayMessage('QR code uploaded successfully!');
+            } else {
+                displayMessage(`Error: ${data.message}`, true);
+            }
+        } catch (error) {
+            displayMessage('Network error. Is the backend server running?', true);
+            console.error('Network error:', error);
+        }
+    });
+}
+
+// --- Student Fees Logic (for student-fees.html) ---
+
+const paymentConfirmForm = document.getElementById('payment-confirm-form');
+const qrCodeImg = document.getElementById('qr-code-img');
+
+if (qrCodeImg) {
+    // Fetch and display QR code on page load
+    async function fetchQrCode() {
+        try {
+            // For a simple test, we can use a hardcoded path
+            const qrCodeUrl = 'http://localhost:5000/uploads/qr-code.png'; // This needs to be a real URL from your backend
+            qrCodeImg.src = qrCodeUrl;
+        } catch (error) {
+            displayMessage('Failed to load QR code.', true);
+        }
+    }
+    
+    fetchQrCode();
+}
+
+if (paymentConfirmForm) {
+    paymentConfirmForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            displayMessage('No token found. Please log in first.', true);
+            return;
+        }
+
+        const feeData = {
+            semester: document.getElementById('semester').value,
+            amount: parseFloat(document.getElementById('amount').value),
+            transactionId: document.getElementById('transactionId').value,
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/students/fees/confirm`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(feeData),
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                displayMessage('Payment confirmed successfully!');
             } else {
                 displayMessage(`Error: ${data.message}`, true);
             }

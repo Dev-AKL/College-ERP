@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+      }
+      .container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 500px;
+        text-align: center;
+      }
+      h1 {
+        color: #333;
+      }
+      input[type="file"] {
+        margin-bottom: 20px;
+      }
+      button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      #message {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Admin Dashboard</h1>
+      <h3>Upload UPI QR Code</h3>
+      <form id="qr-upload-form" enctype="multipart/form-data">
+        <input type="file" id="qr-code-file" name="qrCode" required />
+        <button type="submit">Upload QR Code</button>
+      </form>
+      <div id="message"></div>
+    </div>
+    <script src="./script.js"></script>
+  </body>
+</html>
