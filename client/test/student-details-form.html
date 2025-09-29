@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Details Form</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+      }
+      .form-container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 500px;
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      label {
+        display: block;
+        margin-top: 15px;
+        font-weight: bold;
+      }
+      input[type="text"],
+      input[type="tel"],
+      input[type="email"] {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      button {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        margin-top: 25px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      #message {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 5px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form-container">
+      <h1>Student Details</h1>
+      <form id="details-form">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required />
+
+        <label for="rollNo">Roll No.</label>
+        <input type="text" id="rollNo" name="rollNo" required />
+
+        <label for="studentId">Student ID</label>
+        <input type="text" id="studentId" name="studentId" required />
+
+        <label for="stream">Stream</label>
+        <input type="text" id="stream" name="stream" required />
+
+        <label for="course">Course of Study</label>
+        <input type="text" id="course" name="course" required />
+
+        <label for="courseTenure">Course Tenure</label>
+        <input type="text" id="courseTenure" name="courseTenure" required />
+
+        <label for="contactNo">Contact No.</label>
+        <input type="tel" id="contactNo" name="contactNo" required />
+
+        <label for="additionalEmail">Additional Email</label>
+        <input type="email" id="additionalEmail" name="additionalEmail" />
+
+        <button type="submit">Save Details</button>
+      </form>
+      <div id="message"></div>
+    </div>
+    <script src="student-details-script.js"></script>
+  </body>
+</html>

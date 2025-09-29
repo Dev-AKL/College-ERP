@@ -21,6 +21,16 @@ const userSchema = new mongoose.Schema({
     enum: ['student', 'faculty', 'admin'],
     default: 'student',
   },
+
+  studentDetails: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'StudentDetails',
+  },
+  detailsComplete: {
+    type: Boolean,
+    default: false,
+  },
+  
 }, {
   timestamps: true
 });
