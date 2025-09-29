@@ -1,3 +1,5 @@
+// client/script.js
+
 const signupForm = document.getElementById('signup-form');
 const loginForm = document.getElementById('login-form');
 const messageDiv = document.getElementById('message');
@@ -6,71 +8,92 @@ const API_BASE_URL = 'http://localhost:5000/api/auth';
 
 // Function to display messages
 const displayMessage = (message, isError = false) => {
-    messageDiv.textContent = message;
-    messageDiv.style.backgroundColor = isError ? '#f8d7da' : '#d4edda';
-    messageDiv.style.color = isError ? '#721c24' : '#155724';
+    if (messageDiv) {
+        messageDiv.textContent = message;
+        messageDiv.style.backgroundColor = isError ? '#f8d7da' : '#d4edda';
+        messageDiv.style.color = isError ? '#721c24' : '#155724';
+    }
 };
 
-// Signup form submission
-signupForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+// Signup form submission (only runs on signup.html)
+if (signupForm) {
+    signupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-    const name = document.getElementById('signup-name').value;
-    const email = document.getElementById('signup-email').value;
-    const password = document.getElementById('signup-password').value;
-    const role = document.getElementById('signup-role').value;
+        const name = document.getElementById('signup-name').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        const role = document.getElementById('signup-role').value;
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/signup`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password, role }),
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password, role }),
+            });
 
-        const data = await response.json();
-        if (response.ok) {
-            displayMessage(`Signup successful! Welcome, ${data.name}.`);
-            console.log('Signup Response:', data);
-        } else {
-            displayMessage(`Error: ${data.message}`, true);
+            const data = await response.json();
+            if (response.ok) {
+                displayMessage(`Signup successful! Please log in.`);
+                console.log('Signup Response:', data);
+            } else {
+                displayMessage(`Error: ${data.message}`, true);
+            }
+        } catch (error) {
+            displayMessage('Network error. Is the backend server running?', true);
+            console.error('Network error:', error);
         }
-    } catch (error) {
-        displayMessage('Network error. Is the backend server running?', true);
-        console.error('Network error:', error);
-    }
-});
+    });
+}
 
-// Login form submission
-loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+// Login form submission (only runs on login.html)
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
 
-        const data = await response.json();
-        if (response.ok) {
-            displayMessage(`Login successful! Welcome, ${data.name}.`);
-            console.log('Login Response:', data);
+            const data = await response.json();
 
-            // Automatically store the new token and user's name
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('name', data.name);
-            
-            // Redirect to the student details form page
-            window.location.href = './student-details-form.html';
+            // Check for a 404 status, which indicates the user doesn't exist.
+      if (response.status === 404) {
+        displayMessage('Account not found. Please sign up first.');
+        return;
+      }
 
+      // If the response is OK, proceed with login and redirection.
+
+            if (response.ok) {
+                displayMessage(`Login successful! Welcome, ${data.name}.`);
+                console.log('Login Response:', data);
+
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('name', data.name);
+                
+                //Check the detailsComplete field and redirect accordingly
+                
+                if (data.user && data.user.detailsComplete) {
+          // Redirect to the user's profile if details are complete
+          window.location.href = '/dashboard.html';
         } else {
-            displayMessage(`Error: ${data.message}`, true);
+          // Redirect to the student details form if details are not complete
+          window.location.href = '/student-details-form.html';
         }
-    } catch (error) {
-        displayMessage('Network error. Is the backend server running?', true);
-        console.error('Network error:', error);
-    }
-});
+
+            } else {
+                displayMessage(`Error: ${data.message}`, true);
+            }
+        } catch (error) {
+            displayMessage('Network error. Is the backend server running?', true);
+            console.error('Network error:', error);
+        }
+    });
+}
