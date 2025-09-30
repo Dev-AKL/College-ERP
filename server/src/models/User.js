@@ -26,6 +26,12 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'StudentDetails',
   },
+
+  facultyDetails: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'FacultyDetails',
+  },
+
   detailsComplete: {
     type: Boolean,
     default: false,

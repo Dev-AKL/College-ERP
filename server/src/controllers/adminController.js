@@ -51,7 +51,7 @@ const getAllStudentPayments = async (req, res) => {
       .populate('user', 'name email');
 
     const algorithm = 'aes-256-cbc';
-    const key = crypto.createHash('sha256').update(String(process.env.ENCRYPTION_KEY)).digest('base64').substr(0, 32);
+    const key = crypto.createHash('sha256').update(String(process.env.ENCRYPTION_KEY)).digest('base64').slice(0, 32);
 
     // Decrypt the transaction ID for each payment
     const decryptedPayments = studentPayments.map(payment => {
@@ -88,4 +88,151 @@ const getQrCodeUrl = async (req, res) => {
   }
 };
 
-module.exports = { upload, uploadQrCode, getAllStudentPayments, getQrCodeUrl };
+//Logic for User Management Section
+
+// server/src/controllers/adminController.js
+
+const FacultyDetails = require('../models/FacultyDetails');
+const StudentDetails = require('../models/StudentDetails');
+const Attendance = require('../models/Attendance');
+const Submission = require('../models/Submission');
+const Result = require('../models/Result');
+const Alert = require('../models/Alert');
+const UserAlertStatus = require('../models/UserAlertStatus');
+const EventRegistration = require('../models/EventRegistration'); // Make sure this is imported
+const path = require('path');
+const fs = require('fs/promises'); // For file system operations
+
+// Helper function to handle the deletion of a single file from the server
+const deleteFile = async (filePath) => {
+    if (filePath) {
+        try {
+            // Construct the local server path from the stored public URL
+            const localPath = path.join(__dirname, '..', '..', filePath); 
+            await fs.unlink(localPath);
+        } catch (err) {
+            // Ignore if the file doesn't exist (EENOENT), but log other errors
+            if (err.code !== 'ENOENT') {
+                console.error(`Failed to delete file ${filePath}:`, err);
+            }
+        }
+    }
+};
+
+// --- Admin: Search and View Users (UX Flow Step 1) ---
+const searchUsers = async (req, res) => {
+    try {
+        const { query, role } = req.query;
+        let filters = {};
+
+        // Filter by role if provided
+        if (role) {
+            filters.role = role;
+        }
+
+        // Search by name or email if query is provided
+        if (query) {
+            filters.$or = [
+                { name: { $regex: query, $options: 'i' } },
+                { email: { $regex: query, $options: 'i' } },
+            ];
+        }
+
+        // Fetch users, excluding the password field
+        const users = await User.find(filters)
+            .select('-password -__v')
+            .sort('name'); 
+
+        // Note: For hackathon simplicity, searching by Student ID/Roll No 
+        // would require an additional query across the StudentDetails collection.
+
+        res.status(200).json(users);
+    } catch (error) {
+        res.status(500).json({ message: 'Error searching users.', details: error.message });
+    }
+};
+
+// --- Admin: Update User Role/Details (UX Flow Step 2) ---
+const updateUserInfoByAdmin = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { name, email, role } = req.body; // Add more fields as needed
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { name, email, role },
+            { new: true, runValidators: true }
+        ).select('-password -__v');
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        res.status(200).json({ message: 'User profile updated successfully.', user: updatedUser });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating user info.', details: error.message });
+    }
+};
+
+// --- Admin: Delete User (Cascading Delete - UX Flow Step 3) ---
+const deleteUserByAdmin = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const userToDelete = await User.findById(userId);
+
+        if (!userToDelete) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        // CRITICAL SECURITY CHECK: Prevent deleting another admin unless explicitly allowed.
+        if (userToDelete.role === 'admin' && req.user._id.toString() !== userId) {
+             return res.status(403).json({ message: 'Forbidden: Cannot delete another admin account.' });
+        }
+        
+        // --- 1. Perform Cascading Delete on Linked Data ---
+        
+        // A. Delete Profile Details (Faculty or Student)
+        if (userToDelete.role === 'faculty' && userToDelete.facultyDetails) {
+            await FacultyDetails.findByIdAndDelete(userToDelete.facultyDetails);
+        } else if (userToDelete.role === 'student' && userToDelete.studentDetails) {
+            // Note: In a full system, you would check if StudentDetails is the correct model to delete
+            await StudentDetails.findByIdAndDelete(userToDelete.studentDetails);
+        }
+        
+        // B. Delete Academic/Record Data
+        if (userToDelete.role === 'student') {
+            await Result.deleteMany({ student: userId });
+            
+            // Delete Submissions and their physical files
+            const submissions = await Submission.find({ student: userId });
+            for (const sub of submissions) {
+                await deleteFile(sub.filePath); // Physical file deletion
+            }
+            await Submission.deleteMany({ student: userId });
+        }
+        
+        // C. Clean up Attendance Records (Removes the user's entry from all past class records)
+        await Attendance.updateMany(
+            { 'students.student': userId },
+            { $pull: { students: { student: userId } } }
+        );
+
+        // D. Delete Alerts and Alert Statuses
+        await Alert.deleteMany({ $or: [{ sender: userId }, { recipient: userId }] });
+        await UserAlertStatus.deleteMany({ user: userId });
+
+        // E. Delete Event Registrations
+        await EventRegistration.deleteMany({ participant: userId });
+
+        // --- 2. Final Delete of User Document ---
+        await User.findByIdAndDelete(userId);
+
+        res.status(200).json({ message: `User ${userToDelete.email} and all associated records have been permanently deleted.` });
+
+    } catch (error) {
+        console.error('CRITICAL Error during cascading user deletion:', error);
+        res.status(500).json({ message: 'Server error during deletion process.' });
+    }
+};
+
+module.exports = { searchUsers, updateUserInfoByAdmin, deleteUserByAdmin ,upload, uploadQrCode, getAllStudentPayments, getQrCodeUrl };

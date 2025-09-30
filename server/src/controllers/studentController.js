@@ -89,7 +89,7 @@ const confirmFeePayment = async (req, res) => {
     const { semester, amount, transactionId } = req.body;
 
     const algorithm = 'aes-256-cbc';
-    const key = crypto.createHash('sha256').update(String(process.env.ENCRYPTION_KEY)).digest('base64').substr(0, 32);
+    const key = crypto.createHash('sha256').update(String(process.env.ENCRYPTION_KEY)).digest('base64').slice(0, 32);
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv(algorithm, key, iv);
     let encrypted = cipher.update(transactionId, 'utf8', 'hex');
