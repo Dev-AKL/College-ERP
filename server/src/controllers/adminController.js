@@ -76,4 +76,16 @@ const getAllStudentPayments = async (req, res) => {
   }
 };
 
-module.exports = { upload, uploadQrCode, getAllStudentPayments };
+const getQrCodeUrl = async (req, res) => {
+  try {
+    const admin = await User.findOne({ role: 'admin' });
+    if (!admin || !admin.qrCodeUrl) {
+      return res.status(404).json({ message: 'QR code not found' });
+    }
+    res.status(200).json({ qrCodeUrl: admin.qrCodeUrl });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { upload, uploadQrCode, getAllStudentPayments, getQrCodeUrl };
