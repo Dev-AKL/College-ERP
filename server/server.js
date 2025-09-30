@@ -25,6 +25,17 @@ const adminRoutes = require('./src/routes/adminRoutes');
 
 app.use('/api/admin', adminRoutes);
 
+const assignmentRoutes = require('./src/routes/assignmentRoutes');
+const submissionRoutes = require('./src/routes/submissionRoutes');
+
+// Serve static files from the 'uploads' directory
+app.use('/uploads', express.static('uploads'));
+app.use('/uploads/submissions', express.static('uploads/submissions'));
+app.use('/uploads/assignments', express.static('uploads/assignments'));
+
+// Connect the new routes
+app.use('/api/assignments', assignmentRoutes);
+app.use('/api/submissions', submissionRoutes);
 
 // MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI;
