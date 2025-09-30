@@ -30,6 +30,15 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+
+  academicCalendar: [{
+        title: String,
+        date: Date,
+        type: {
+            type: String,
+            enum: ['holiday', 'event', 'cancellation'],
+        },
+    }],
   
 }, {
   timestamps: true
