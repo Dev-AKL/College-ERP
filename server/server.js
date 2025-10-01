@@ -32,6 +32,7 @@ const announcementRoutes = require('./src/routes/announcementRoutes'); // Alerts
 const assignmentRoutes = require('./src/routes/assignmentRoutes'); // Faculty Assignment Management
 const submissionRoutes = require('./src/routes/submissionRoutes'); // Student Submission
 const facultyProfileRoutes = require('./src/routes/facultyProfileRoutes');
+const adminRoutes = require('./src/routes/adminRoutes'); // <-- CRITICAL ADMIN ROUTE IMPORT
 
 // --- Route Mounting ---
 app.use('/api/auth', authRoutes); // Login, Signup, Password Reset
@@ -44,7 +45,7 @@ app.use('/api/admin/exams', adminExamRoutes); // Admin Exam Scheduling & Oversig
 app.use('/api/faculty/results', facultyResultRoutes); // Faculty Grading Interface
 app.use('/api/student/exams', studentExamRoutes); // Student Exam/Result Viewing
 app.use('/api/faculty', facultyProfileRoutes); // Use a dedicated path for faculty actions
-
+app.use('/api/admin',adminRoutes);
 
 // --- MongoDB Connection ---
 const MONGO_URI = process.env.MONGO_URI;

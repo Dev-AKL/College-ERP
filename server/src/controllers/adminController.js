@@ -93,14 +93,12 @@ const getQrCodeUrl = async (req, res) => {
 // server/src/controllers/adminController.js
 
 const FacultyDetails = require('../models/FacultyDetails');
-const StudentDetails = require('../models/StudentDetails');
 const Attendance = require('../models/Attendance');
 const Submission = require('../models/Submission');
 const Result = require('../models/Result');
 const Alert = require('../models/Alert');
 const UserAlertStatus = require('../models/UserAlertStatus');
 const EventRegistration = require('../models/EventRegistration'); // Make sure this is imported
-const path = require('path');
 const fs = require('fs/promises'); // For file system operations
 
 // Helper function to handle the deletion of a single file from the server
@@ -235,4 +233,91 @@ const deleteUserByAdmin = async (req, res) => {
     }
 };
 
-module.exports = { searchUsers, updateUserInfoByAdmin, deleteUserByAdmin ,upload, uploadQrCode, getAllStudentPayments, getQrCodeUrl };
+// ... (Existing imports: User, StudentDetails, crypto, etc.)
+const Refund = require('../models/Refund'); // Import the new model
+
+// Helper function to decrypt the transaction ID
+const decryptTransactionId = (encryptedTransactionId) => {
+    try {
+        const algorithm = 'aes-256-cbc';
+        const key = crypto.createHash('sha256').update(String(process.env.ENCRYPTION_KEY)).digest('base64').slice(0, 32);
+        
+        const parts = encryptedTransactionId.split(':');
+        const iv = Buffer.from(parts[0], 'hex');
+        const encrypted = parts[1];
+        
+        const decipher = crypto.createDecipheriv(algorithm, key, iv);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+    } catch (error) {
+        console.error('Decryption failed:', error);
+        return 'DECRYPTION_FAILED';
+    }
+};
+
+// Admin: Get a specific payment for refund verification
+const getPaymentForVerification = async (req, res) => {
+    try {
+        const { studentId, semester } = req.query; // Admin searches by student ID and semester
+
+        const studentDetails = await StudentDetails.findOne({ user: studentId });
+
+        if (!studentDetails) {
+            return res.status(404).json({ message: 'Student not found.' });
+        }
+
+        const feeEntry = studentDetails.fees.find(fee => fee.semester === semester && fee.status === 'paid');
+        
+        if (!feeEntry) {
+            return res.status(404).json({ message: 'Paid fee entry not found for this semester.' });
+        }
+
+        // Decrypt the sensitive transaction ID for Admin viewing
+        const decryptedTransactionId = decryptTransactionId(feeEntry.transactionId);
+
+        res.status(200).json({
+            message: 'Payment details fetched successfully.',
+            feeDetails: {
+                ...feeEntry.toObject(),
+                transactionId: decryptedTransactionId // Display decrypted ID
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching payment details.', details: error.message });
+    }
+};
+
+// Admin: Process and record a refund (UX Flow Step 2)
+const processRefund = async (req, res) => {
+    try {
+        const adminProcessedBy = req.user._id;
+        const { originalFeeEntryId, studentId, refundAmount, reason, originalTransactionId } = req.body;
+
+        // 1. Record the refund transaction
+        const newRefund = await Refund.create({
+            originalTransactionId: originalTransactionId, // Stored as plain text in Refund model (auditing)
+            originalFeeEntry: originalFeeEntryId,
+            student: studentId,
+            adminProcessedBy,
+            refundAmount,
+            reason,
+        });
+
+        // 2. Update the specific fee entry in StudentDetails (Optional: Mark status)
+        // In this implementation, we simply record the refund but don't alter the fee status from 'paid'
+        // to keep the original payment record clean. You might add a 'refunded' field to StudentDetails.fees
+        
+        // 3. Send Notification to Student (UX Flow Step 3)
+        // In a real system, you would trigger your alert/notification system here
+        
+        res.status(200).json({
+            message: 'Refund successfully processed and logged.',
+            refund: newRefund,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error processing refund.', details: error.message });
+    }
+};
+
+module.exports = { searchUsers, updateUserInfoByAdmin, deleteUserByAdmin ,upload, uploadQrCode, getAllStudentPayments, getQrCodeUrl, getPaymentForVerification,processRefund };
